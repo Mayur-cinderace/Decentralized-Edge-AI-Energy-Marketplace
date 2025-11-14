@@ -1,0 +1,3 @@
+Normalized RMSE: 7.67%
+RMSE: 514.4909
+R² Score: 0.9963
