@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnergyChain - Log In</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+
+        .energy-gradient {
+            background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .btn-glow {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+
+        .btn-glow:hover {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal-scale.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased bg-gray-50 overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav id="navbar" class="fixed w-full top-0 z-50 bg-white transition-all duration-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" />
+                    </svg>
+                    <div class="text-2xl font-bold gradient-text">EnergyChain</div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="Landing.html"
+                        class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Home</a>
+                    <a href="signup.html"
+                        class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Section -->
+    <section
+        class="flex items-center justify-center min-h-screen pt-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 relative">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-20 left-10 w-64 h-64 bg-green-400 rounded-full filter blur-3xl"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-emerald-400 rounded-full filter blur-3xl"></div>
+        </div>
+        <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 z-10 reveal-scale">
+            <div class="text-center mb-8">
+                <h2 class="text-4xl font-bold text-gray-900 mb-2 gradient-text">Log In</h2>
+                <p class="text-gray-600">Welcome back! Access your EnergyChain dashboard.</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-semibold mb-2" for="email">Email</label>
+                    <input type="email" id="email" name="email" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 transition duration-300 shadow-sm"
+                        placeholder="you@domain.com">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-semibold mb-2" for="password">Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 transition duration-300 shadow-sm"
+                        placeholder="Your password">
+                </div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" name="remember" class="mr-2">
+                        <label for="remember" class="text-gray-700 text-sm">Remember Me</label>
+                    </div>
+                    <a href="#" class="text-green-600 text-sm font-semibold hover:underline">Forgot Password?</a>
+                </div>
+                <button type="submit"
+                    class="energy-gradient text-white w-full py-3 rounded-lg font-semibold text-lg btn-glow mt-4">
+                    Log In
+                </button>
+            </form>
+            <div class="text-center text-gray-600 mt-6">
+                New to EnergyChain?
+                <a href="signup.html" class="text-green-600 font-semibold hover:underline">Create an Account</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-10 bg-white border-t border-gray-200 mt-10">
+        <div class="max-w-7xl mx-auto text-center text-gray-600">
+            &copy; 2025 EnergyChain. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        // Reveal animation
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.reveal-scale');
+            reveals.forEach(reveal => {
+                const windowHeight = window.innerHeight;
+                const elementTop = reveal.getBoundingClientRect().top;
+                const revealPoint = 80;
+                if (elementTop < windowHeight - revealPoint) {
+                    reveal.classList.add('active');
+                } else {
+                    reveal.classList.remove('active');
+                }
+            });
+        }
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        // Login form handler
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            try {
+                const res = await fetch("http://localhost:5000/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Store user data
+                    sessionStorage.setItem("token", data.token);
+                    sessionStorage.setItem("name", data.user.name);
+                    sessionStorage.setItem("email", data.user.email);
+
+                    alert("Login successful!");
+                    window.location.href = "dashboard.html";
+                } else {
+                    alert(data.msg || "Login failed");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                alert("An error occurred during login. Please try again.");
+            }
+        });
+    </script>
+</body>
+
+</html>
