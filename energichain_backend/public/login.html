@@ -75,7 +75,7 @@
                     <div class="text-2xl font-bold gradient-text">EnergyChain</div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="Landing.html"
+                    <a href="index.html"
                         class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Home</a>
                     <a href="signup.html"
                         class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Sign Up</a>
@@ -134,6 +134,7 @@
         </div>
     </footer>
 
+    <!-- LOGIN SCRIPT — FIXED KEY MATCHING -->
     <script>
         // Reveal animation
         function revealOnScroll() {
@@ -152,39 +153,41 @@
         window.addEventListener('scroll', revealOnScroll);
         window.addEventListener('load', revealOnScroll);
 
-        // Login form handler
-        document.getElementById("loginForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
+        // LOGIN FORM — NOW MATCHES SIGNUP'S KEY
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("loginForm");
 
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
 
-            try {
-                const res = await fetch("http://localhost:5000/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
+                const email = document.getElementById("email").value.trim().toLowerCase();
+                const password = document.getElementById("password").value;
 
-                const data = await res.json();
+                if (!email || !password) {
+                    alert("Please enter both email and password.");
+                    return;
+                }
 
-                if (res.ok) {
-                    // Store user data
-                    sessionStorage.setItem("token", data.token);
-                    sessionStorage.setItem("name", data.user.name);
-                    sessionStorage.setItem("email", data.user.email);
+                // MATCHES SIGNUP'S KEY: "energyUsers"
+                const users = JSON.parse(localStorage.getItem("energyUsers") || "[]");
+                const user = users.find(u => u.email === email && u.password === password);
 
-                    alert("Login successful!");
+                if (user) {
+                    // SAVE TO SESSION
+                    sessionStorage.setItem("userName", user.name);
+                    sessionStorage.setItem("userEmail", email);
+                    sessionStorage.setItem("isLoggedIn", "true");
+                    sessionStorage.setItem("authToken", "web3-jwt-" + Date.now());
+
+                    alert(`Welcome back, ${user.name}!`);
                     window.location.href = "dashboard.html";
                 } else {
-                    alert(data.msg || "Login failed");
+                    alert("Invalid email or password. Try signing up first!");
                 }
-            } catch (error) {
-                console.error("Login error:", error);
-                alert("An error occurred during login. Please try again.");
-            }
+            });
         });
     </script>
+
 </body>
 
 </html>

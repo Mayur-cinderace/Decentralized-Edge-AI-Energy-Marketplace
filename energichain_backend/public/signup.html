@@ -78,7 +78,7 @@
                 <div class="flex items-center space-x-4">
                     <a href="login.html"
                         class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Log In</a>
-                    <a href="Landing.html"
+                    <a href="index.html"
                         class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Home</a>
                 </div>
             </div>
@@ -104,21 +104,21 @@
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2" for="name">Name</label>
                     <input type="text" id="name" name="name" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:(outline-none border-green-500) transition duration-300 shadow-sm"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 transition duration-300 shadow-sm"
                         placeholder="Your full name">
                 </div>
 
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2" for="email">Email</label>
                     <input type="email" id="email" name="email" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:(outline-none border-green-500) transition duration-300 shadow-sm"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 transition duration-300 shadow-sm"
                         placeholder="you@domain.com">
                 </div>
 
                 <div class="mb-6">
                     <label class="block text-gray-700 font-semibold mb-2" for="password">Password</label>
                     <input type="password" id="password" name="password" required
-                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:(outline-none border-green-500) transition duration-300 shadow-sm"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:border-green-500 transition duration-300 shadow-sm"
                         placeholder="Strong password">
                 </div>
 
@@ -137,52 +137,74 @@
 
     <footer class="py-10 bg-white border-t border-gray-200 mt-10">
         <div class="max-w-7xl mx-auto text-center text-gray-600">
-            &copy; 2025 EnergyChain. All rights reserved.
+            © 2025 EnergyChain. All rights reserved.
         </div>
     </footer>
 
-    <!-- SIGNUP SCRIPT (CORRECT POSITION) -->
+    <!-- SIGNUP SCRIPT — NO BACKEND, PURE FRONTEND -->
     <script>
-        window.addEventListener("DOMContentLoaded", function () {
-
-            document.getElementById("signupForm").addEventListener("submit", async function (e) {
-                e.preventDefault();
-
-                const name = document.getElementById("name").value.trim();
-                const email = document.getElementById("email").value.trim();
-                const password = document.getElementById("password").value.trim();
-
-                const res = await fetch("http://localhost:5000/auth/signup", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name, email, password })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    alert("Signup successful!");
-                    window.location.href = "login.html";
-                } else {
-                    alert(data.msg || "Signup failed");
-                }
-            });
-
-        });
-    </script>
-
-    <script>
+        // Reveal animation
         function revealOnScroll() {
             const reveals = document.querySelectorAll('.reveal-scale');
             reveals.forEach(reveal => {
                 const windowHeight = window.innerHeight;
                 const elementTop = reveal.getBoundingClientRect().top;
                 const revealPoint = 80;
-                if (elementTop < windowHeight - revealPoint) reveal.classList.add('active');
+                if (elementTop < windowHeight - revealPoint) {
+                    reveal.classList.add('active');
+                } else {
+                    reveal.classList.remove('active');
+                }
             });
         }
         window.addEventListener('scroll', revealOnScroll);
         window.addEventListener('load', revealOnScroll);
+
+        // SIGNUP FORM — 100% FRONTEND
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("signupForm");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+
+                const name = document.getElementById("name").value.trim();
+                const email = document.getElementById("email").value.trim().toLowerCase();
+                const password = document.getElementById("password").value;
+
+                // Basic validation
+                if (!name || !email || !password) {
+                    alert("Please fill in all fields.");
+                    return;
+                }
+
+                if (password.length < 6) {
+                    alert("Password must be at least 6 characters.");
+                    return;
+                }
+
+                // Load existing users
+                const users = JSON.parse(localStorage.getItem("energyUsers") || "[]");
+
+                // Check if email exists
+                if (users.some(u => u.email === email)) {
+                    alert("This email is already registered!");
+                    return;
+                }
+
+                // Save new user
+                users.push({ name, email, password });
+                localStorage.setItem("energyUsers", JSON.stringify(users));
+
+                // Save current session
+                sessionStorage.setItem("userName", name);
+                sessionStorage.setItem("userEmail", email);
+                sessionStorage.setItem("isLoggedIn", "true");
+                sessionStorage.setItem("authToken", "web3-jwt-" + Date.now());
+
+                alert(`Welcome, ${name}! Account created successfully.`);
+                window.location.href = "dashboard.html";
+            });
+        });
     </script>
 
 </body>

@@ -5,20 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EnergyChain – Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.ethers.io/lib/ethers-6.13.1.umd.min.js" type="text/javascript"></script>
+  <script src="https://unpkg.com/ethers@6.13.1/dist/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
   <style>
     .energy-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
-    .gradient-text { background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .btn-g { transition: all .3s; position:relative; overflow:hidden; }
-    .btn-glow::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent); transition:left .5s; }
-    .btn-glow:hover::before { left:100%; }
-    .btn-glow:hover { box-shadow:0 0 30px rgba(16,185,129,.6); transform:translateY(-2px); }
+    .gradient-text { 
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+      background-clip: text; 
+    }
+    .btn-g { transition: all .3s; position: relative; overflow: hidden; }
+    .btn-glow::before { 
+      content: ''; 
+      position: absolute; 
+      top: 0; 
+      left: -100%; 
+      width: 100%; 
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent); 
+      transition: left .5s; 
+    }
+    .btn-glow:hover::before { left: 100%; }
+    .btn-glow:hover { box-shadow: 0 0 30px rgba(16,185,129,.6); transform: translateY(-2px); }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none !important;
+    }
+    button:disabled::before, button:disabled:hover::before { display: none !important; }
+    button:disabled:hover { box-shadow: none !important; transform: none !important; }
+    .toast { 
+      position: fixed; 
+      bottom: 20px; 
+      right: 20px; 
+      padding: 12px 24px; 
+      border-radius: 8px; 
+      color: white; 
+      z-index: 1000; 
+      opacity: 0; 
+      transition: opacity 0.3s; 
+    }
+    .toast.show { opacity: 1; }
+    .toast-success { background: #10b981; }
+    .toast-error { background: #ef4444; }
+    .invalid { border-color: #ef4444 !important; }
+    @media (max-width: 640px) {
+      .table-container { overflow-x: auto; }
+      canvas { max-width: 100%; }
+    }
   </style>
 </head>
 <body class="font-sans antialiased bg-gray-50">
-
   <!-- Navbar -->
   <nav class="fixed w-full top-0 z-50 bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
@@ -37,7 +75,6 @@
   <!-- Main Dashboard -->
   <section class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto">
-
       <h1 class="text-4xl font-bold gradient-text mb-8 text-center">Energy Marketplace Dashboard</h1>
 
       <!-- Connect Wallet -->
@@ -48,19 +85,31 @@
         <p id="accountDisplay" class="mt-4 text-gray-600"></p>
       </div>
 
+      <!-- Profile Card -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Your Profile</h2>
+        <div class="grid md:grid-cols-3 gap-4 text-gray-700">
+          <div><strong>Name:</strong> <span id="profileName">-</span></div>
+          <div><strong>Email:</strong> <span id="profileEmail">-</span></div>
+          <div><strong>Wallet:</strong> <code id="profileWallet">-</code></div>
+        </div>
+      </div>
+
       <!-- Create Offer -->
       <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 class="text-2xl font-semibold mb-4">Create Energy Offer</h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
-            <input id="userName" type="text" placeholder="John Doe"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
-          </div>
+  <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
+  <input id="userName" type="text" placeholder="John Doe"
+         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
+  <p id="userNameError" class="text-sm text-red-600 hidden">Name is required</p>
+</div>
           <div>
             <label class="block text-gray-700 font-medium mb-2">Price (ETH) ≥ 0.01</label>
             <input id="priceEth" type="number" step="0.001" min="0.01" placeholder="0.05"
                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
+            <p id="priceEthError" class="text-sm text-red-600 hidden">Price must be ≥ 0.01 ETH</p>
           </div>
         </div>
         <button id="createOfferBtn" disabled
@@ -76,204 +125,701 @@
         <p class="mt-2 text-sm text-gray-600">Minimum price: <strong>0.01 ETH</strong></p>
       </div>
 
+      <!-- Visualizations -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Market Insights</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-lg font-medium mb-2">Active Offer Prices</h3>
+            <canvas id="priceChart"></canvas>
+          </div>
+          <div>
+            <h3 class="text-lg font-medium mb-2">Accepted Offers by Seller</h3>
+            <canvas id="acceptedChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters and Toggle -->
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+        <div class="flex items-center space-x-4">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="showAllToggle" class="rounded" checked> <!-- Default to show all -->
+            <span class="text-sm text-gray-600">Show all marketplace offers</span>
+          </label>
+        </div>
+        <div class="flex items-center space-x-2">
+          <label class="text-sm text-gray-600">Sort by:</label>
+          <select id="sortOffers" class="border rounded px-2 py-1">
+            <option value="id">Offer ID</option>
+            <option value="priceAsc">Price (Low to High)</option>
+            <option value="priceDesc">Price (High to Low)</option>
+            <option value="dateDesc">Date (Newest)</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Offers Table -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="bg-white rounded-xl shadow-lg p-6 table-container">
         <h2 class="text-2xl font-semibold mb-4">Active Offers</h2>
         <div id="offersContainer" class="space-y-3">
           <p class="text-gray-500 text-center">Loading offers from blockchain…</p>
         </div>
       </div>
 
+      <!-- Accepted Offers History -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mt-8 table-container">
+        <h2 class="text-2xl font-semibold mb-4">Accepted Offers (History)</h2>
+        <div id="acceptedContainer" class="space-y-3">
+          <p class="text-gray-500 text-center">No accepted offers yet.</p>
+        </div>
+      </div>
     </div>
   </section>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
 
   <!-- ==================== SCRIPT ==================== -->
   <script>
     // -------------------------------------------------
-    // 1. NETWORK CONFIG (add more networks later)
+    // GLOBAL STATE
+    // -------------------------------------------------
+    let hasRequested = false;
+    let hasConnected = false;
+    let provider, signer, contract, userAddress, userHash;
+    let acceptedOffers = JSON.parse(localStorage.getItem("acceptedOffers")) || [];
+    let priceChart, acceptedChart;
+    let pollInterval; // For polling offers
+
+    // -------------------------------------------------
+    // NETWORK CONFIG
     // -------------------------------------------------
     const CONFIG = {
       networks: {
-        "1337": {               // Ganache
-          name: "Ganache Local",
-          rpc: "http://127.0.0.1:7545"
-        },
-        "11155111": {           // Sepolia
-          name: "Sepolia Testnet",
-          rpc: "https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY"
-        }
-        // add mainnet, polygon, etc. here
+        11155111: { name: "Sepolia Testnet", rpc: "https://eth-sepolia.g.alchemy.com/v2/demo" },
+        "0xaa36a7": { name: "Sepolia Testnet", rpc: "https://eth-sepolia.g.alchemy.com/v2/demo" }
       }
     };
 
     // -------------------------------------------------
-    // 2. GLOBAL VARS
-    // -------------------------------------------------
-    let CONTRACT_ADDRESS;
-    let provider;
-    let signer;
-    let contract;
-    let userAddress;
-
-    // -------------------------------------------------
-    // 3. LOAD CONTRACT ADDRESS FROM JSON
+    // LOAD CONTRACT ADDRESS
     // -------------------------------------------------
     async function loadConfig() {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      const network = CONFIG.networks[chainId];
-      if (!network) {
-        alert(`Unsupported network (chainId ${chainId})`);
+      let chainId;
+      try {
+        chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      } catch (e) {
+        showToast("MetaMask not detected", "error");
         return false;
       }
 
-      // fetch address from backend config file
+      const chainIdDec = parseInt(chainId, 16);
+      const network = CONFIG.networks[chainIdDec] || CONFIG.networks[chainId];
+      if (!network) {
+        showToast(`Please switch to Sepolia Testnet! Current: ${chainId}`, "error");
+        return false;
+      }
+
       let config;
       try {
-        config = await fetch('/config/contract-address.json').then(r => r.json());
+        config = await fetch('/config/contract_address.json').then(r => r.json());
       } catch (e) {
-        alert('Failed to load contract-address.json');
+        showToast('contract_address.json not found', "error");
         return false;
       }
 
-      CONTRACT_ADDRESS = config[chainId];
+      const CONTRACT_ADDRESS = config[chainIdDec] || config[chainId];
       if (!CONTRACT_ADDRESS) {
-        alert(`No contract deployed on ${network.name} (chainId ${chainId})`);
+        showToast(`No contract on ${network.name}`, "error");
         return false;
       }
 
       console.log(`Connected to ${network.name}: ${CONTRACT_ADDRESS}`);
-      return true;
+      return { CONTRACT_ADDRESS, network };
     }
 
     // -------------------------------------------------
-    // 4. CONNECT WALLET (dynamic)
+    // UTILITY FUNCTIONS
     // -------------------------------------------------
-    document.getElementById("connectBtn").addEventListener("click", async () => {
-      if (!window.ethereum) return alert("Install MetaMask!");
+    function hashUsername(name) {
+      return ethers.keccak256(ethers.toUtf8Bytes(String(name).trim().toLowerCase()));
+    }
 
-      const ok = await loadConfig();
-      if (!ok) return;
+    function escapeHtml(s) {
+      if (s === undefined || s === null) return "";
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
 
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("toast");
+      toast.innerHTML = message;
+      toast.className = `toast toast-${type} show`;
+      setTimeout(() => {
+        toast.className = `toast toast-${type}`;
+      }, 3000);
+    }
 
-      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    function validateForm() {
+  const name = document.getElementById("userName").value.trim();
+  const price = parseFloat(document.getElementById("priceEth").value);
+  const nameError = document.getElementById("userNameError");
+  const priceError = document.getElementById("priceEthError");
+  let valid = true;
 
-      document.getElementById("accountDisplay").textContent =
-        `Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+  if (!nameError || !priceError) {
+    console.error("Form elements not found");
+    return false;
+  }
 
-      document.getElementById("connectBtn").textContent = "Connected";
-      document.getElementById("connectBtn").disabled = true;
+  if (!name) {
+    nameError.classList.remove("hidden");
+    document.getElementById("userName").classList.add("invalid");
+    valid = false;
+  } else {
+    nameError.classList.add("hidden");
+    document.getElementById("userName").classList.remove("invalid");
+  }
 
-      loadOffers();
-      document.getElementById("createOfferBtn").disabled = false;
+  if (!price || price < 0.01) {
+    priceError.classList.remove("hidden");
+    document.getElementById("priceEth").classList.add("invalid");
+    valid = false;
+  } else {
+    priceError.classList.add("hidden");
+    document.getElementById("priceEth").classList.remove("invalid");
+  }
+
+  document.getElementById("createOfferBtn").disabled = !valid || !hasConnected;
+  return valid;
+}
+
+    // -------------------------------------------------
+    // LOGIN CHECK
+    // -------------------------------------------------
+    document.addEventListener("DOMContentLoaded", async () => {
+      const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+      const userName = sessionStorage.getItem("userName");
+      const userEmail = sessionStorage.getItem("userEmail");
+
+      if (!isLoggedIn || !userName || !userEmail) {
+        showToast("Please log in.", "error");
+        window.location.href = "login.html";
+        return;
+      }
+
+      document.getElementById("profileName").textContent = userName;
+      document.getElementById("profileEmail").textContent = userEmail;
+      document.getElementById("userName").value = userName;
+      userHash = hashUsername(userName);
+
+      if (typeof Chart !== "undefined") {
+        initializeCharts();
+        updateAcceptedList();
+      } else {
+        showToast("Failed to load Chart.js. Visualizations disabled.", "error");
+        updateAcceptedList();
+      }
     });
 
     // -------------------------------------------------
-    // 5. HASH USERNAME
+    // CONNECT WALLET
     // -------------------------------------------------
-    function hashUsername(name) {
-      return ethers.keccak256(ethers.toUtf8Bytes(name.trim().toLowerCase()));
+    async function connectWallet() {
+      if (hasRequested || hasConnected) return;
+
+      hasRequested = true;
+      const btn = document.getElementById("connectBtn");
+      btn.textContent = "Connecting...";
+      btn.disabled = true;
+
+      try {
+        if (!window.ethereum) throw new Error("Install MetaMask!");
+
+        const config = await loadConfig();
+        if (!config) throw new Error("Network error");
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        if (!accounts.length) throw new Error("No account");
+
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        contract = new ethers.Contract(config.CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        const shortAddr = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+        document.getElementById("accountDisplay").textContent = `Connected: ${shortAddr}`;
+        document.getElementById("profileWallet").textContent = shortAddr;
+
+        btn.innerHTML = `
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+          </svg>
+          Connected
+        `;
+        btn.classList.remove("btn-glow");
+        document.getElementById("createOfferBtn").disabled = !validateForm();
+        hasConnected = true;
+
+        await loadOffers();
+        listenForAccepts();
+        listenForCreates(); // Start listening for new offers
+        startPolling(); // Start polling for offers
+      } catch (e) {
+        console.error(e);
+        if (e.code === -32002) {
+          showToast("MetaMask is busy. Check popup, refresh, and click Connect ONCE.", "error");
+        } else {
+          showToast(e.message || "Connection failed", "error");
+        }
+        btn.textContent = "Try Again";
+        btn.disabled = false;
+        hasRequested = false;
+      }
     }
 
+    document.getElementById("connectBtn").addEventListener("click", connectWallet);
+
+    window.addEventListener("load", () => {
+      if (window.ethereum?.selectedAddress && !hasConnected && !hasRequested) {
+        setTimeout(connectWallet, 800);
+      }
+    });
+
+    window.ethereum?.on("accountsChanged", () => {
+      hasConnected = false;
+      hasRequested = false;
+      clearInterval(pollInterval); // Stop polling on account change
+      connectWallet();
+    });
+
+    window.ethereum?.on("chainChanged", () => {
+      clearInterval(pollInterval); // Stop polling on chain change
+      window.location.reload();
+    });
+
     // -------------------------------------------------
-    // 6. CREATE OFFER
+    // CREATE OFFER
     // -------------------------------------------------
     document.getElementById("createOfferBtn").addEventListener("click", async () => {
+      if (!validateForm()) return;
+
       const name = document.getElementById("userName").value.trim();
       const priceEth = document.getElementById("priceEth").value;
-      if (!name || !priceEth) return alert("Fill name & price");
-
-      const priceWei = ethers.parseEther(priceEth);
-      const userHash = hashUsername(name);
+      const priceWei = ethers.parseEther(String(priceEth));
+      const userHashLocal = hashUsername(name);
 
       const btn = document.getElementById("createOfferBtn");
       const txt = document.getElementById("createText");
       const spin = document.getElementById("createSpinner");
-      txt.textContent = "Sending…"; spin.classList.remove("hidden"); btn.disabled = true;
+      txt.textContent = "Sending…";
+      spin.classList.remove("hidden");
+      btn.disabled = true;
 
       try {
-        const tx = await contract.createOffer(userHash, priceWei);
+        const tx = await contract.createOffer(userHashLocal, priceWei);
         await tx.wait();
-        alert("Offer created on-chain!");
-        document.getElementById("userName").value = "";
+        showToast(`Offer created! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
         document.getElementById("priceEth").value = "";
-        loadOffers();
+        await loadOffers(); // Refresh offers immediately
       } catch (e) {
-        console.error(e);
-        alert(e?.reason || "Transaction failed");
+        console.error("createOffer failed", e);
+        showToast(e.reason || e.message || "Transaction failed", "error");
       } finally {
-        txt.textContent = "Create Offer"; spin.classList.add("hidden"); btn.disabled = false;
+        txt.textContent = "Create Offer";
+        spin.classList.add("hidden");
+        btn.disabled = !validateForm();
       }
     });
 
+    document.getElementById("userName").addEventListener("input", validateForm);
+    document.getElementById("priceEth").addEventListener("input", validateForm);
+
     // -------------------------------------------------
-    // 7. LOAD OFFERS
+    // LOAD OFFERS
     // -------------------------------------------------
     async function loadOffers() {
       const container = document.getElementById("offersContainer");
       container.innerHTML = "<p class='text-gray-500 text-center'>Loading…</p>";
+
+      if (!contract) {
+        container.innerHTML = "<p class='text-gray-500 text-center'>Connect wallet.</p>";
+        return;
+      }
+
       try {
-        const count = await contract.getOfferCount();
-        const rows = [];
-        for (let i = 0; i < count; i++) {
-          const [userHash, priceWei, ts, active] = await contract.getOffer(i);
-          if (!active) continue;
-          const priceEth = ethers.formatEther(priceWei);
-          const date = new Date(Number(ts) * 1000).toLocaleString();
-          rows.push(`
-            <div class="flex justify-between items-center p-4 border rounded-lg">
-              <div>
-                <p class="font-medium">Offer #${i}</p>
-                <p class="text-sm text-gray-600">User hash: <code>${userHash.slice(0,10)}…</code></p>
-                <p class="text-sm text-gray-600">Price: <strong>${priceEth} ETH</strong></p>
-                <p class="text-xs text-gray-500">${date}</p>
-              </div>
-              <button onclick="acceptOffer(${i})" class="bg-green-600 text-white px-4 py-1 rounded btn-glow text-sm">Accept</button>
-            </div>
-          `);
+        const showAll = document.getElementById("showAllToggle").checked;
+        const sortBy = document.getElementById("sortOffers").value;
+        let offerIds = [];
+
+        if (showAll) {
+          const countBN = await contract.getOfferCount();
+          const count = Number(countBN);
+          offerIds = Array.from({ length: count }, (_, i) => i);
+        } else {
+          offerIds = await contract.getActiveUserOfferIds(userHash);
         }
-        container.innerHTML = rows.length ? rows.join("") : "<p class='text-center text-gray-500'>No active offers yet.</p>";
+
+        const offers = [];
+        for (let i of offerIds) {
+          const offerRaw = await contract.getOffer(i);
+          const uHash = offerRaw[0];
+          const priceWei = offerRaw[1];
+          const ts = offerRaw[2];
+          const active = offerRaw[3];
+
+          if (!active) continue;
+
+          offers.push({
+            id: i,
+            userHash: uHash,
+            priceEth: parseFloat(ethers.formatEther(priceWei)), // Convert to number
+            timestamp: Number(ts) * 1000, // Ensure number
+            date: new Date(Number(ts) * 1000).toLocaleString()
+          });
+        }
+
+        offers.sort((a, b) => {
+          if (sortBy === "priceAsc") return a.priceEth - b.priceEth;
+          if (sortBy === "priceDesc") return b.priceEth - a.priceEth;
+          if (sortBy === "dateDesc") return b.timestamp - a.timestamp;
+          return a.id - b.id;
+        });
+
+        const fragment = document.createDocumentFragment();
+        let foundAny = false;
+
+        for (const offer of offers) {
+          foundAny = true;
+          const isMine = offer.userHash === userHash;
+          const displayName = isMine ? sessionStorage.getItem("userName") : (String(offer.userHash).slice(0, 10) + "...");
+
+          const card = document.createElement("div");
+          card.className = "flex justify-between items-center p-4 border rounded-lg";
+
+          const left = document.createElement("div");
+          left.innerHTML = `
+            <p class="font-medium">Offer #${offer.id}</p>
+            <p class="text-sm text-gray-600">${escapeHtml(displayName)}</p>
+            <p class="text-sm text-gray-600">Price: <strong>${escapeHtml(offer.priceEth)} ETH</strong></p>
+            <p class="text-xs text-gray-500">${escapeHtml(offer.date)}</p>
+          `;
+
+          const right = document.createElement("div");
+          const btn = document.createElement("button");
+          btn.className = `text-white px-4 py-1 rounded btn-glow text-sm flex items-center`;
+          btn.dataset.id = String(offer.id);
+
+          if (isMine) {
+            btn.className += " bg-red-600";
+            btn.textContent = "Cancel";
+            btn.addEventListener("click", async (ev) => {
+              const id = Number(ev.currentTarget.dataset.id);
+              if (!confirm(`Cancel offer #${id}?`)) return;
+              try {
+                const tx = await contract.cancelOffer(id);
+                await tx.wait();
+                showToast(`Offer cancelled! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
+                await loadOffers();
+              } catch (err) {
+                console.error("cancelOffer failed", err);
+                showToast(err.reason || err.message || "Cancel failed", "error");
+              }
+            });
+          } else {
+            btn.className += " bg-green-600";
+            btn.innerHTML = `
+              <span>Accept</span>
+              <span class="hidden ml-2">
+                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </span>
+            `;
+            btn.dataset.price = offer.priceEth;
+            btn.dataset.sellerhash = offer.userHash;
+            btn.addEventListener("click", async (ev) => {
+              const id = Number(ev.currentTarget.dataset.id);
+              const priceStr = ev.currentTarget.dataset.price;
+              const sellerHash = ev.currentTarget.dataset.sellerhash;
+              const sellerName = getNameFromHash(sellerHash);
+
+              if (!confirm(`Accept from ${sellerName} for ${priceStr} ETH?`)) return;
+
+              const txt = ev.currentTarget.querySelector("span:first-child");
+              const spin = ev.currentTarget.querySelector("span:last-child");
+              txt.textContent = "Accepting…";
+              spin.classList.remove("hidden");
+              ev.currentTarget.disabled = true;
+
+              try {
+                const value = ethers.parseEther(String(priceStr));
+                const tx = await contract.acceptOffer(id, { value });
+                await tx.wait();
+                showToast(`Offer accepted! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
+                await loadOffers();
+              } catch (err) {
+                console.error("acceptOffer failed", err);
+                showToast(err.reason || err.message || "Accept failed", "error");
+              } finally {
+                txt.textContent = "Accept";
+                spin.classList.add("hidden");
+                ev.currentTarget.disabled = false;
+              }
+            });
+          }
+
+          right.appendChild(btn);
+          card.appendChild(left);
+          card.appendChild(right);
+          fragment.appendChild(card);
+        }
+
+        if (!foundAny) {
+          container.innerHTML = "<p class='text-center text-gray-500'>No offers.</p>";
+        } else {
+          container.innerHTML = "";
+          container.appendChild(fragment);
+        }
+
+        if (priceChart) {
+          updatePriceChart(offers);
+        }
       } catch (e) {
-        console.error(e);
-        container.innerHTML = "<p class='text-red-600'>Failed to load offers.</p>";
+        console.error("loadOffers failed", e);
+        container.innerHTML = "<p class='text-red-600'>Load failed.</p>";
       }
     }
 
     // -------------------------------------------------
-    // 8. ACCEPT OFFER (placeholder)
+    // CHART INITIALIZATION
     // -------------------------------------------------
-    async function acceptOffer(id) {
-      alert(`Accept logic for offer #${id} – implement payment/escrow here.`);
+    function initializeCharts() {
+      console.log("Initializing charts with Chart.js");
+      priceChart = new Chart(document.getElementById("priceChart"), {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Offer Prices (ETH)',
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Price (ETH)' }
+            },
+            x: {
+              title: { display: true, text: 'Offer ID' }
+            }
+          }
+        }
+      });
+
+      acceptedChart = new Chart(document.getElementById("acceptedChart"), {
+        type: 'pie',
+        data: {
+          labels: [],
+          datasets: [{
+            data: [],
+            backgroundColor: ['#10b981', '#059669', '#047857', '#34d399', '#6ee7b7']
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Accepted Offers by Seller' }
+          }
+        }
+      });
+    }
+
+    function updatePriceChart(offers) {
+      if (!priceChart) return;
+      const labels = offers.map(o => `Offer #${o.id}`);
+      const data = offers.map(o => o.priceEth); // Already a number
+      priceChart.data.labels = labels;
+      priceChart.data.datasets[0].data = data;
+      priceChart.update();
+    }
+
+    function updateAcceptedChart() {
+      if (!acceptedChart) return;
+      const sellerCounts = {};
+      acceptedOffers.forEach(offer => {
+        sellerCounts[offer.seller] = (sellerCounts[offer.seller] || 0) + 1;
+      });
+
+      const labels = Object.keys(sellerCounts);
+      const data = Object.values(sellerCounts);
+
+      acceptedChart.data.labels = labels.length ? labels : ['No Data'];
+      acceptedChart.data.datasets[0].data = data.length ? data : [1];
+      acceptedChart.update();
     }
 
     // -------------------------------------------------
-    // 9. LOGOUT
+    // LISTEN FOR OFFER ACCEPTED EVENT
+    // -------------------------------------------------
+    async function listenForAccepts() {
+      if (!contract) return;
+
+      try { contract.off("OfferAccepted"); } catch(e) {}
+
+      contract.on("OfferAccepted", (offerId, buyer, sellerHash, price, timestamp, event) => {
+        try {
+          const priceEth = ethers.formatEther(price);
+          const date = new Date(Number(timestamp) * 1000).toLocaleString();
+          const sellerName = getNameFromHash(sellerHash);
+
+          acceptedOffers.push({
+            id: offerId.toString(),
+            buyer: buyer.slice(0, 6) + "..." + buyer.slice(-4),
+            seller: sellerName,
+            price: priceEth,
+            date: date
+          });
+
+          localStorage.setItem("acceptedOffers", JSON.stringify(acceptedOffers));
+          updateAcceptedList();
+          if (acceptedChart) updateAcceptedChart();
+          loadOffers(); // Refresh offers on accept
+        } catch (err) {
+          console.error("Error in OfferAccepted handler", err);
+        }
+      });
+
+      try {
+        const filter = contract.filters.OfferAccepted();
+        const events = await contract.queryFilter(filter, -1000, "latest"); // Check last 1000 blocks
+        for (const e of events) {
+          const { offerId, buyer, sellerHash, price, timestamp } = e.args;
+          const priceEth = ethers.formatEther(price);
+          const date = new Date(Number(timestamp) * 1000).toLocaleString();
+          const sellerName = getNameFromHash(sellerHash);
+
+          if (!acceptedOffers.some(o => o.id === offerId.toString())) {
+            acceptedOffers.push({
+              id: offerId.toString(),
+              buyer: buyer.slice(0, 6) + "..." + buyer.slice(-4),
+              seller: sellerName,
+              price: priceEth,
+              date: date
+            });
+          }
+        }
+        localStorage.setItem("acceptedOffers", JSON.stringify(acceptedOffers));
+        updateAcceptedList();
+        if (acceptedChart) updateAcceptedChart();
+      } catch (e) {
+        console.error("Failed to load past accepts", e);
+      }
+    }
+
+    // -------------------------------------------------
+    // LISTEN FOR OFFER CREATED EVENT
+    // -------------------------------------------------
+    async function listenForCreates() {
+      if (!contract) return;
+
+      try { contract.off("OfferCreated"); } catch(e) {}
+
+      contract.on("OfferCreated", (offerId, userHash, price, timestamp, event) => {
+        try {
+          console.log(`New offer created: #${offerId}`);
+          loadOffers(); // Refresh offers when a new one is created
+        } catch (err) {
+          console.error("Error in OfferCreated handler", err);
+        }
+      });
+    }
+
+    // -------------------------------------------------
+    // POLL FOR OFFERS
+    // -------------------------------------------------
+    function startPolling() {
+      clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        if (hasConnected && contract) {
+          console.log("Polling for new offers...");
+          await loadOffers();
+        }
+      }, 30000); // Poll every 30 seconds
+    }
+
+    function getNameFromHash(hash) {
+      const currentName = sessionStorage.getItem("userName");
+      if (!hash) return "";
+      try {
+        if (hash === hashUsername(currentName)) return currentName;
+      } catch (e) {}
+      return String(hash).slice(0, 10) + "...";
+    }
+
+    function updateAcceptedList() {
+      const container = document.getElementById("acceptedContainer");
+      if (!acceptedOffers.length) {
+        container.innerHTML = "<p class='text-gray-500 text-center'>No accepted offers yet.</p>";
+        return;
+      }
+
+      const rows = acceptedOffers.map(offer => `
+        <div class="flex justify-between items-center p-4 border rounded-lg bg-green-50">
+          <div>
+            <p class="font-medium">Offer #${escapeHtml(offer.id)} Accepted</p>
+            <p class="text-sm text-gray-600">Buyer: <strong>${escapeHtml(offer.buyer)}</strong></p>
+            <p class="text-sm text-gray-600">Seller: <strong>${escapeHtml(offer.seller)}</strong></p>
+            <p class="text-sm text-gray-600">Price: <strong>${escapeHtml(offer.price)} ETH</strong></p>
+            <p class="text-xs text-gray-500">${escapeHtml(offer.date)}</p>
+          </div>
+          <span class="text-green-600 font-semibold text-sm">Completed</span>
+        </div>
+      `);
+
+      container.innerHTML = rows.join("");
+    }
+
+    // -------------------------------------------------
+    // EVENT LISTENERS
+    // -------------------------------------------------
+    document.getElementById("showAllToggle").addEventListener("change", loadOffers);
+    document.getElementById("sortOffers").addEventListener("change", loadOffers);
+
+    // -------------------------------------------------
+    // LOGOUT
     // -------------------------------------------------
     document.getElementById("logoutBtn").addEventListener("click", () => {
+      clearInterval(pollInterval);
       sessionStorage.clear();
       window.location.href = "login.html";
     });
 
     // -------------------------------------------------
-    // 10. AUTO-REDIRECT IF NOT LOGGED IN
-    // -------------------------------------------------
-    if (!sessionStorage.getItem("token")) {
-      window.location.href = "login.html";
-    }
-
-    // -------------------------------------------------
-    // 11. CONTRACT ABI (copy from artifacts)
+    // ABI
     // -------------------------------------------------
     const CONTRACT_ABI = [
-      "function MIN_PRICE() view returns (uint256)",
       "function createOffer(bytes32 userHash, uint256 price)",
       "function getOfferCount() view returns (uint256)",
       "function getOffer(uint256 id) view returns (bytes32, uint256, uint256, bool)",
       "function cancelOffer(uint256 id)",
-      "event OfferCreated(uint256 indexed offerId, bytes32 indexed userHash, uint256 price, uint256 timestamp)"
+      "function acceptOffer(uint256 id) payable",
+      "function getActiveUserOfferIds(bytes32 userHash) view returns (uint256[])",
+      "event OfferCreated(uint256 indexed offerId, bytes32 indexed userHash, uint256 price, uint256 timestamp)",
+      "event OfferAccepted(uint256 indexed offerId, address buyer, bytes32 sellerHash, uint256 price, uint256 timestamp)"
     ];
   </script>
 </body>
