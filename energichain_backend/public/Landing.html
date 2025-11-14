@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EnergyChain - Powering the Future of Energy Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px);} to {opacity: 1; transform: translateX(0);}}
+        @keyframes slideInRight { from {opacity: 0; transform: translateX(50px);} to {opacity: 1; transform: translateX(0);}}
+        @keyframes scaleIn { from {opacity: 0; transform: scale(0.9);} to {opacity: 1; transform: scale(1);}}
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        .reveal { opacity: 0; transform: translateY(50px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);}
+        .reveal.active { opacity: 1; transform: translateY(0);}
+        .reveal-left { opacity: 0; transform: translateX(-50px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);}
+        .reveal-left.active { opacity: 1; transform: translateX(0);}
+        .reveal-right { opacity: 0; transform: translateX(50px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);}
+        .reveal-right.active { opacity: 1; transform: translateX(0);}
+        .reveal-scale { opacity: 0; transform: scale(0.9); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);}
+        .reveal-scale.active { opacity: 1; transform: scale(1);}
+        .energy-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);}
+        .energy-gradient-alt { background: linear-gradient(135deg, #34d399 0%, #10b981 100%);}
+        .gradient-text { background: linear-gradient(135deg, #10b981 0%, #059669 100%);-webkit-background-clip: text;-webkit-text-fill-color: transparent;background-clip: text;}
+        .hover-lift { transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);}
+        .hover-lift:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);}
+        .btn-glow { transition: all 0.3s ease; position: relative; overflow: hidden;}
+        .btn-glow::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); transition: left 0.5s;}
+        .btn-glow:hover::before { left: 100%;}
+        .btn-glow:hover { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); transform: translateY(-2px);}
+        .nav-shadow { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95);}
+        .parallax { transition: transform 0.3s ease-out;}
+        .energy-particle { position: absolute; width: 4px; height: 4px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite;}
+        @keyframes energyFlow { 0% { transform: translateX(0) translateY(0); opacity: 0;} 50% { opacity: 1;} 100% { transform: translateX(100px) translateY(-20px); opacity: 0;} }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gray-50 overflow-x-hidden">
+
+<!-- Navbar -->
+<nav id="navbar" class="fixed w-full top-0 z-50 bg-white transition-all duration-500">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+                </svg>
+                <div class="text-2xl font-bold gradient-text">EnergyChain</div>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#features" class="text-gray-700 hover:text-green-600 transition-colors duration-300">Features</a>
+                <a href="#use-cases" class="text-gray-700 hover:text-green-600 transition-colors duration-300">Use Cases</a>
+                <a href="#about" class="text-gray-700 hover:text-green-600 transition-colors duration-300">About</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                   <a href="login.html" class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">LogIn</a>
+                <a href="signup.html" class="energy-gradient text-white px-6 py-2 rounded-lg font-semibold btn-glow">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-20 left-10 w-64 h-64 bg-green-400 rounded-full filter blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-emerald-400 rounded-full filter blur-3xl"></div>
+    </div>
+    <div class="max-w-7xl mx-auto text-center relative z-10">
+        <div class="reveal-scale">
+            <h1 class="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Powering the Future of <span class="gradient-text">Energy Trading</span>
+            </h1>
+        </div>
+        <div class="reveal-scale" style="transition-delay: 0.2s;">
+            <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+                Trade renewable energy seamlessly with blockchain-verified transparency. Join the decentralized energy revolution.
+            </p>
+        </div>
+        <div class="reveal-scale" style="transition-delay: 0.4s;">
+            <a href="#signup" class="energy-gradient text-white px-10 py-4 rounded-lg text-lg font-semibold inline-block btn-glow">
+                Start Free Trial
+            </a>
+        </div>
+        <div class="reveal" style="transition-delay: 0.6s;">
+            <p class="text-gray-500 mt-6">
+                Join 500+ energy providers and consumers building the grid of tomorrow
+            </p>
+        </div>
+        <!-- Energy Grid Visual -->
+        <div class="mt-20 reveal-scale" style="transition-delay: 0.8s;">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-5xl mx-auto relative overflow-hidden">
+                <div class="relative">
+                    <svg class="w-full h-80" viewBox="0 0 1000 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Solar Panels -->
+                        <g class="float-animation">
+                            <rect x="50" y="80" width="120" height="80" rx="8" fill="#10b981" opacity="0.8"/>
+                            <path d="M70 100 L70 140 M90 100 L90 140 M110 100 L110 140 M130 100 L130 140" stroke="white" stroke-width="2"/>
+                        </g>
+                        <!-- Wind Turbine -->
+                        <g class="float-animation" style="animation-delay: 0.5s;">
+                            <rect x="250" y="100" width="80" height="60" rx="8" fill="#059669" opacity="0.8"/>
+                            <circle cx="290" cy="80" r="25" fill="#047857" opacity="0.9"/>
+                        </g>
+                        <!-- Energy Storage -->
+                        <g class="float-animation" style="animation-delay: 1s;">
+                            <rect x="430" y="90" width="100" height="70" rx="8" fill="#10b981" opacity="0.8"/>
+                            <rect x="450" y="100" width="60" height="15" rx="3" fill="white" opacity="0.9"/>
+                            <rect x="450" y="125" width="40" height="15" rx="3" fill="white" opacity="0.6"/>
+                        </g>
+                        <!-- Smart Grid -->
+                        <g class="float-animation" style="animation-delay: 1.5s;">
+                            <rect x="630" y="85" width="110" height="75" rx="8" fill="#059669" opacity="0.8"/>
+                            <circle cx="685" cy="122" r="20" fill="white" opacity="0.8"/>
+                            <path d="M675 122 L685 132 L705 112" stroke="#10b981" stroke-width="3" fill="none"/>
+                        </g>
+                        <!-- EV Charging -->
+                        <g class="float-animation" style="animation-delay: 2s;">
+                            <rect x="820" y="90" width="100" height="70" rx="8" fill="#10b981" opacity="0.8"/>
+                            <path d="M860 110 L860 140 M880 115 L860 130 L880 145" stroke="white" stroke-width="3" fill="none"/>
+                        </g>
+                        <!-- Connection Lines & Energy Flow Particles -->
+                        <path d="M170 120 L250 130" stroke="#34d399" stroke-width="3" stroke-dasharray="5,5" opacity="0.6">
+                            <animate attributeName="stroke-dashoffset" from="0" to="10" dur="1s" repeatCount="indefinite"/>
+                        </path>
+                        <path d="M330 130 L430 130" stroke="#34d399" stroke-width="3" stroke-dasharray="5,5" opacity="0.6">
+                            <animate attributeName="stroke-dashoffset" from="0" to="10" dur="1s" repeatCount="indefinite"/>
+                        </path>
+                        <path d="M530 125 L630 122" stroke="#34d399" stroke-width="3" stroke-dasharray="5,5" opacity="0.6">
+                            <animate attributeName="stroke-dashoffset" from="0" to="10" dur="1s" repeatCount="indefinite"/>
+                        </path>
+                        <path d="M740 122 L820 125" stroke="#34d399" stroke-width="3" stroke-dasharray="5,5" opacity="0.6">
+                            <animate attributeName="stroke-dashoffset" from="0" to="10" dur="1s" repeatCount="indefinite"/>
+                        </path>
+                        <circle cx="200" cy="125" r="4" fill="#10b981">
+                            <animate attributeName="cx" from="170" to="250" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="380" cy="130" r="4" fill="#10b981">
+                            <animate attributeName="cx" from="330" to="430" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="580" cy="127" r="4" fill="#10b981">
+                            <animate attributeName="cx" from="530" to="630" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="780" cy="123" r="4" fill="#10b981">
+                            <animate attributeName="cx" from="740" to="820" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                    </svg>
+                </div>
+                <div class="mt-6 text-center text-gray-600 font-semibold">
+                    Real-Time Energy Flow on Blockchain
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Bar -->
+<section class="py-12 bg-white border-y border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-wrap justify-center items-center gap-16 text-center">
+            <div class="flex items-center space-x-3 reveal-left">
+                <div class="w-12 h-12 energy-gradient rounded-full flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                    </svg>
+                </div>
+                <span class="font-semibold text-gray-700">Verified Green Energy</span>
+            </div>
+            <div class="flex items-center space-x-3 reveal" style="transition-delay: 0.1s;">
+                <div class="w-12 h-12 energy-gradient rounded-full flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                    </svg>
+                </div>
+                <span class="font-semibold text-gray-700">Carbon Neutral Trading</span>
+            </div>
+            <div class="flex items-center space-x-3 reveal-right" style="transition-delay: 0.2s;">
+                <div class="w-12 h-12 energy-gradient rounded-full flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <span class="font-semibold text-gray-700">100% Transparent</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-5xl font-bold text-center text-gray-900 mb-6 reveal">Core Benefits</h2>
+        <p class="text-xl text-center text-gray-600 mb-16 reveal" style="transition-delay: 0.1s;">Revolutionizing energy trading with blockchain technology</p>
+        <div class="grid md:grid-cols-3 gap-10">
+            <div class="bg-white p-10 rounded-2xl shadow-lg hover-lift reveal-left">
+                <div class="w-20 h-20 energy-gradient rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Unbreakable Security</h3>
+                <p class="text-gray-600 leading-relaxed">Immutable ledger ensures energy transaction integrity. Every kilowatt traded is cryptographically verified and tamper-proof.</p>
+            </div>
+            <div class="bg-white p-10 rounded-2xl shadow-lg hover-lift reveal" style="transition-delay: 0.15s;">
+                <div class="w-20 h-20 energy-gradient rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Instant Settlement</h3>
+                <p class="text-gray-600 leading-relaxed">Real-time energy trading with near-instant settlement. Process millions of microtransactions across the smart grid seamlessly.</p>
+            </div>
+            <div class="bg-white p-10 rounded-2xl shadow-lg hover-lift reveal-right" style="transition-delay: 0.3s;">
+                <div class="w-20 h-20 energy-gradient rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">Green Compliance</h3>
+                <p class="text-gray-600 leading-relaxed">Built-in carbon tracking and renewable energy certificates. Meet sustainability goals with automated compliance reporting.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Use Case Section -->
+<section id="use-cases" class="py-24 px-4 sm:px-6 lg:px-8 bg-white">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-5xl font-bold text-center text-gray-900 mb-6 reveal">Where Energy Meets Innovation</h2>
+        <p class="text-xl text-center text-gray-600 mb-20 reveal" style="transition-delay: 0.1s;">Real-world applications transforming the energy sector</p>
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div class="reveal-left">
+                <h3 class="text-4xl font-bold text-gray-900 mb-6">Peer-to-Peer Energy Trading</h3>
+                <p class="text-lg text-gray-600 mb-6 leading-relaxed">
+                    Enable direct energy trading between prosumers and consumers. Solar panel owners can sell excess energy to neighbors, creating a truly decentralized energy marketplace with transparent pricing and instant settlements.
+                </p>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 energy-gradient rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                        </div>
+                        <span class="text-gray-700">Real-time energy price discovery</span>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 energy-gradient rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                        </div>
+                        <span class="text-gray-700">Automated smart contract settlements</span>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="flex-shrink-0 w-8 h-8 energy-gradient rounded-full flex items-center justify-center mr-4">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                            </svg>
+                        </div>
+                        <span class="text-gray-700">Blockchain-verified green energy credits</span>
+                    </li>
+                </ul>
+                <a href="#" class="text-green-600 font-semibold text-lg hover:text-green-700 transition-colors inline-flex items-center">
+                    Explore All Use Cases 
+                    <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="reveal-right">
+                <div class="energy-gradient rounded-3xl p-12 text-white text-center shadow-2xl relative overflow-hidden">
+                    <div class="absolute inset-0 opacity-20">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
+                        <div class="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full filter blur-3xl"></div>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="text-7xl font-bold mb-4">60%</div>
+                        <div class="text-3xl font-semibold mb-3">Lower Energy Costs</div>
+                        <p class="text-green-100 text-lg">Average savings for P2P trading participants</p>
+                        <div class="mt-8 pt-8 border-t border-green-400">
+                            <div class="text-5xl font-bold mb-2">2.5 GWh</div>
+                            <p class="text-green-100">Traded daily on our platform</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-green-50 to-emerald-50">
+    <div class="max-w-5xl mx-auto text-center">
+        <h2 class="text-5xl font-bold text-gray-900 mb-8 reveal">Our Commitment to a Sustainable Future</h2>
+        <p class="text-xl text-gray-600 mb-12 leading-relaxed reveal" style="transition-delay: 0.15s;">
+            Founded by energy innovators and blockchain experts, EnergyChain was built on the vision that the future of energy must be decentralized, transparent, and sustainable. We're creating an open platform that democratizes energy trading, empowers renewable energy adoption, and accelerates the transition to a carbon-neutral world.
+        </p>
+        <div class="reveal-scale mt-16" style="transition-delay: 0.3s;">
+            <div class="inline-block bg-white p-8 rounded-2xl shadow-xl">
+                <svg class="w-80 h-40 mx-auto" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="80" cy="80" r="50" stroke="#10b981" stroke-width="4" fill="none" opacity="0.8"/>
+                    <circle cx="160" cy="80" r="50" stroke="#059669" stroke-width="4" fill="none" opacity="0.8"/>
+                    <circle cx="240" cy="80" r="50" stroke="#10b981" stroke-width="4" fill="none" opacity="0.8"/>
+                    <line x1="130" y1="80" x2="110" y2="80" stroke="#10b981" stroke-width="4"/>
+                    <line x1="190" y1="80" x2="210" y2="80" stroke="#10b981" stroke-width="4"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="py-10 bg-white border-t border-gray-200 mt-10">
+    <div class="max-w-7xl mx-auto text-center text-gray-600">
+        &copy; 2025 EnergyChain. All rights reserved.
+    </div>
+</footer>
+
+<script>
+function revealOnScroll() {
+    const reveals = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+    reveals.forEach(reveal => {
+        const windowHeight = window.innerHeight;
+        const elementTop = reveal.getBoundingClientRect().top;
+        const revealPoint = 80;
+        if (elementTop < windowHeight - revealPoint) {
+            reveal.classList.add('active');
+        } else {
+            reveal.classList.remove('active');
+        }
+    });
+}
+window.addEventListener('scroll', revealOnScroll);
+window.addEventListener('load', revealOnScroll);
+
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+});
+</script>
+</body>
+</html>
