@@ -10,6 +10,9 @@
   <style>
     .energy-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
     .solar-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%); }
+    .wind-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%); }
+    .battery-gradient { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%); }
+    
     .gradient-text { 
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       -webkit-background-clip: text; 
@@ -22,6 +25,13 @@
       -webkit-text-fill-color: transparent; 
       background-clip: text; 
     }
+    .wind-text { 
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+      background-clip: text; 
+    }
+    
     .btn-g { transition: all .3s; position: relative; overflow: hidden; }
     .btn-glow::before { 
       content: ''; 
@@ -36,6 +46,7 @@
     .btn-glow:hover::before { left: 100%; }
     .btn-glow:hover { box-shadow: 0 0 30px rgba(16,185,129,.6); transform: translateY(-2px); }
     .btn-solar-glow:hover { box-shadow: 0 0 30px rgba(245,158,11,.6); }
+    
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -43,6 +54,7 @@
     }
     button:disabled::before, button:disabled:hover::before { display: none !important; }
     button:disabled:hover { box-shadow: none !important; transform: none !important; }
+    
     .toast { 
       position: fixed; 
       bottom: 20px; 
@@ -59,13 +71,81 @@
     .toast-error { background: #ef4444; }
     .toast-warning { background: #f59e0b; }
     .invalid { border-color: #ef4444 !important; }
+    
     .prediction-card {
       background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
       border: 2px solid #f59e0b;
     }
+    
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.3s;
+    }
+    .stat-card:hover {
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+    
+    .module-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+      border: 1px solid #e5e7eb;
+      transition: all 0.3s;
+    }
+    .module-card:hover {
+      box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    }
+    
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border-color: #059669;
+    }
+    .tab-btn:not(.active) {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .tab-btn:not(.active):hover {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    
+    .energy-meter {
+      position: relative;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .energy-meter-fill {
+      height: 100%;
+      transition: width 0.5s ease;
+      border-radius: 4px;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
     @media (max-width: 640px) {
       .table-container { overflow-x: auto; }
       canvas { max-width: 100%; }
+      .stat-card { padding: 1rem; }
+      .module-card { padding: 1rem; }
+      .tab-btn { padding: 0.5rem 1rem; font-size: 0.875rem; }
     }
   </style>
 </head>
@@ -88,220 +168,444 @@
   <!-- Main Dashboard -->
   <section class="pt-24 pb-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-7xl mx-auto">
-      <h1 class="text-4xl font-bold gradient-text mb-8 text-center">Energy Marketplace Dashboard</h1>
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold gradient-text">Energy Dashboard</h1>
+        <div class="flex items-center space-x-3">
+          <span class="text-sm text-gray-600">Live Data</span>
+          <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
 
       <!-- Connect Wallet -->
-      <div class="bg-white rounded-xl shadow-lg p-6 mb-8 text-center">
+      <div class="module-card mb-8 text-center">
         <button id="connectBtn" class="energy-gradient text-white px-8 py-3 rounded-lg font-semibold btn-glow">
           Connect MetaMask / Wallet
         </button>
         <p id="accountDisplay" class="mt-4 text-gray-600"></p>
       </div>
 
-      <!-- Profile Card -->
-      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4">Your Profile</h2>
-        <div class="grid md:grid-cols-3 gap-4 text-gray-700">
-          <div><strong>Name:</strong> <span id="profileName">-</span></div>
-          <div><strong>Email:</strong> <span id="profileEmail">-</span></div>
-          <div><strong>Wallet:</strong> <code id="profileWallet">-</code></div>
+      <!-- Energy Overview Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600 font-medium">Total Generation</span>
+            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-gray-900"><span id="totalGeneration">0</span> kWh</p>
+          <div class="energy-meter mt-3">
+            <div class="energy-meter-fill bg-green-500" id="generationMeter" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600 font-medium">Active Offers</span>
+            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"/>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-gray-900" id="activeOffers">0</p>
+          <p class="text-sm text-gray-500 mt-2">Marketplace listings</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600 font-medium">Total Revenue</span>
+            <svg class="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"/>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-gray-900"><span id="totalRevenue">0.00</span> ETH</p>
+          <p class="text-sm text-gray-500 mt-2">From accepted offers</p>
+        </div>
+
+        <div class="stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600 font-medium">Battery Storage</span>
+            <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+            </svg>
+          </div>
+          <p class="text-3xl font-bold text-gray-900"><span id="batteryLevel">75</span>%</p>
+          <div class="energy-meter mt-3">
+            <div class="energy-meter-fill battery-gradient" id="batteryMeter" style="width: 75%"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Solar Power Prediction Section -->
-      <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-lg p-6 mb-8 border-2 border-amber-200">
-        <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center space-x-3">
-            <svg class="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+      <!-- Tabs Navigation -->
+      <div class="flex space-x-2 mb-8 overflow-x-auto pb-2">
+        <button class="tab-btn active" data-tab="overview">
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+          </svg>
+          Overview
+        </button>
+        <button class="tab-btn" data-tab="solar">
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          Solar Power
+        </button>
+        <button class="tab-btn" data-tab="wind">
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1z"/>
+          </svg>
+          Wind Energy
+        </button>
+        <button class="tab-btn" data-tab="marketplace">
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z"/>
+          </svg>
+          Marketplace
+        </button>
+        <button class="tab-btn" data-tab="history">
+          <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+          </svg>
+          History
+        </button>
+      </div>
+
+      <!-- Tab Content: Overview -->
+      <div class="tab-content" data-tab-content="overview">
+        <!-- Profile Card -->
+        <div class="module-card mb-8">
+          <h2 class="text-2xl font-bold mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
             </svg>
-            <h2 class="text-2xl font-bold solar-text">Solar Power Prediction</h2>
+            Your Profile
+          </h2>
+          <div class="grid md:grid-cols-3 gap-4 text-gray-700">
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold">Name:</span>
+              <span id="profileName">-</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold">Email:</span>
+              <span id="profileEmail">-</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold">Wallet:</span>
+              <code id="profileWallet" class="text-xs bg-gray-100 px-2 py-1 rounded">-</code>
+            </div>
           </div>
-          <span class="bg-amber-600 text-white px-3 py-1 rounded-full text-sm font-semibold">AI-Powered</span>
         </div>
 
-        <p class="text-gray-700 mb-6">Predict AC power output from your solar panels using our machine learning model. Enter real-time sensor data below.</p>
+        <!-- Energy Analytics -->
+        <div class="grid md:grid-cols-2 gap-8 mb-8">
+          <div class="module-card">
+            <h3 class="text-xl font-bold mb-4">Energy Production Trend</h3>
+            <canvas id="productionChart" height="200"></canvas>
+          </div>
+          <div class="module-card">
+            <h3 class="text-xl font-bold mb-4">Energy Mix Distribution</h3>
+            <canvas id="mixChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
 
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+      <!-- Tab Content: Solar Power -->
+      <div class="tab-content hidden" data-tab-content="solar">
+        <div class="module-card mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+              <svg class="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+              </svg>
+              <h2 class="text-2xl font-bold solar-text">Solar Power Prediction</h2>
+            </div>
+            <span class="bg-amber-600 text-white px-3 py-1 rounded-full text-sm font-semibold">AI-Powered</span>
+          </div>
+
+          <p class="text-gray-700 mb-6">Predict AC power output from your solar panels using our machine learning model.</p>
+
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2 text-sm">
+                <svg class="w-4 h-4 inline mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
                 </svg>
                 Date & Time
-              </span>
-            </label>
-            <input id="solarDateTime" type="datetime-local" 
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
-          </div>
+              </label>
+              <input id="solarDateTime" type="datetime-local" 
+                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-amber-500 text-sm">
+            </div>
 
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2 text-sm">
+                <svg class="w-4 h-4 inline mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
                 Irradiation (W/m²)
-              </span>
-            </label>
-            <input id="solarIrradiation" type="number" step="0.01" placeholder="800.5"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
-            <p class="text-xs text-gray-500 mt-1">Typical range: 0-1200 W/m²</p>
-          </div>
+              </label>
+              <input id="solarIrradiation" type="number" step="0.01" placeholder="800.5"
+                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-amber-500 text-sm">
+              <p class="text-xs text-gray-500 mt-1">Range: 0-1200 W/m²</p>
+            </div>
 
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2 text-sm">
+                <svg class="w-4 h-4 inline mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
                 </svg>
-                Ambient Temperature (°C)
-              </span>
-            </label>
-            <input id="solarAmbient" type="number" step="0.1" placeholder="25.5"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
-            <p class="text-xs text-gray-500 mt-1">Typical range: -10 to 50°C</p>
-          </div>
+                Ambient Temp (°C)
+              </label>
+              <input id="solarAmbient" type="number" step="0.1" placeholder="25.5"
+                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-amber-500 text-sm">
+              <p class="text-xs text-gray-500 mt-1">Range: -10 to 50°C</p>
+            </div>
 
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">
-              <span class="flex items-center">
-                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2 text-sm">
+                <svg class="w-4 h-4 inline mr-1 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z"/>
                 </svg>
-                Module Temperature (°C)
+                Module Temp (°C)
+              </label>
+              <input id="solarModule" type="number" step="0.1" placeholder="45.2"
+                     class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-amber-500 text-sm">
+              <p class="text-xs text-gray-500 mt-1">Range: 0 to 85°C</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-3 mb-6">
+            <button id="predictBtn" 
+                    class="solar-gradient text-white px-6 py-2.5 rounded-lg font-semibold btn-glow btn-solar-glow flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
+              </svg>
+              <span id="predictText">Predict AC Power</span>
+              <span id="predictSpinner" class="hidden ml-2">
+                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
               </span>
-            </label>
-            <input id="solarModule" type="number" step="0.1" placeholder="45.2"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
-            <p class="text-xs text-gray-500 mt-1">Typical range: 0 to 85°C</p>
+            </button>
+
+            <button id="fillSampleBtn" 
+                    class="bg-gray-600 text-white px-6 py-2.5 rounded-lg font-semibold btn-glow flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+              </svg>
+              Fill Sample Data
+            </button>
+          </div>
+
+          <!-- Prediction Result -->
+          <div id="predictionResult" class="hidden prediction-card rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-bold text-amber-900">Prediction Result</h3>
+              <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+              </svg>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="bg-white rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-2">Predicted AC Power Output</p>
+                <p class="text-4xl font-bold text-amber-600"><span id="predictedPower">0.00</span> <span class="text-2xl">kW</span></p>
+              </div>
+              
+              <div class="bg-white rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-gray-600 mb-2">Input Parameters</p>
+                <div class="text-sm space-y-1">
+                  <p><strong>Irradiation:</strong> <span id="resultIrradiation">-</span> W/m²</p>
+                  <p><strong>Ambient:</strong> <span id="resultAmbient">-</span> °C</p>
+                  <p><strong>Module:</strong> <span id="resultModule">-</span> °C</p>
+                  <p><strong>Time:</strong> <span id="resultTime">-</span></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 p-4 bg-amber-100 rounded-lg border border-amber-300">
+              <p class="text-sm text-amber-900">
+                <strong>💡 Tip:</strong> Use this prediction to optimize your energy offers on the marketplace!
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 mb-6">
-          <button id="predictBtn" 
-                  class="solar-gradient text-white px-8 py-3 rounded-lg font-semibold btn-glow btn-solar-glow flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
+      <!-- Tab Content: Wind Energy -->
+      <div class="tab-content hidden" data-tab-content="wind">
+        <div class="module-card mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-3">
+              <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z"/>
+              </svg>
+              <h2 class="text-2xl font-bold wind-text">Wind Energy Monitor</h2>
+            </div>
+            <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">Real-time</span>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-gray-700 font-medium">Wind Speed</span>
+                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 3.636a1 1 0 010 1.414 7 7 0 000 9.9 1 1 0 11-1.414 1.414 9 9 0 010-12.728 1 1 0 011.414 0zm9.9 0a1 1 0 011.414 0 9 9 0 010 12.728 1 1 0 11-1.414-1.414 7 7 0 000-9.9 1 1 0 010-1.414zM7.879 6.464a1 1 0 010 1.414 3 3 0 000 4.243 1 1 0 11-1.415 1.414 5 5 0 010-7.07 1 1 0 011.415 0zm4.242 0a1 1 0 011.415 0 5 5 0 010 7.072 1 1 0 01-1.415-1.415 3 3 0 000-4.242 1 1 0 010-1.415zM10 9a1 1 0 011 1v.01a1 1 0 11-2 0V10a1 1 0 011-1z"/>
+                </svg>
+              </div>
+              <p class="text-3xl font-bold text-blue-700" id="windSpeed">12.5</p>
+              <p class="text-sm text-gray-600 mt-1">m/s</p>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-gray-700 font-medium">Power Output</span>
+                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
+                </svg>
+              </div>
+              <p class="text-3xl font-bold text-blue-700" id="windPower">8.3</p>
+              <p class="text-sm text-gray-600 mt-1">kW</p>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border-2 border-blue-200">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-gray-700 font-medium">Efficiency</span>
+                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                </svg>
+              </div>
+              <p class="text-3xl font-bold text-blue-700" id="windEfficiency">87</p>
+              <p class="text-sm text-gray-600 mt-1">%</p>
+            </div>
+          </div>
+
+          <div class="module-card bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+            <h3 class="text-lg font-bold mb-4">Wind Turbine Status</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">Turbine 1</span>
+                  <span class="text-sm font-semibold text-green-600">Active</span>
+                </div>
+                <div class="energy-meter">
+                  <div class="energy-meter-fill wind-gradient" style="width: 92%"></div>
+                </div>
+                <p class="text-xs text-gray-500">Output: 4.2 kW</p>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-600">Turbine 2</span>
+                  <span class="text-sm font-semibold text-green-600">Active</span>
+                </div>
+                <div class="energy-meter">
+                  <div class="energy-meter-fill wind-gradient" style="width: 88%"></div>
+                </div>
+                <p class="text-xs text-gray-500">Output: 4.1 kW</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Marketplace -->
+      <div class="tab-content hidden" data-tab-content="marketplace">
+        <!-- Create Offer -->
+        <div class="module-card mb-8">
+          <h2 class="text-2xl font-bold mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/>
             </svg>
-            <span id="predictText">Predict AC Power</span>
-            <span id="predictSpinner" class="hidden ml-2">
+            Create Energy Offer
+          </h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
+              <input id="userName" type="text" placeholder="John Doe"
+                     class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-green-500">
+              <p id="userNameError" class="text-sm text-red-600 hidden mt-1">Name is required</p>
+            </div>
+            <div>
+              <label class="block text-gray-700 font-medium mb-2">Price (ETH) ≥ 0.01</label>
+              <input id="priceEth" type="number" step="0.001" min="0.01" placeholder="0.05"
+                     class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-green-500">
+              <p id="priceEthError" class="text-sm text-red-600 hidden mt-1">Price must be ≥ 0.01 ETH</p>
+            </div>
+          </div>
+          <button id="createOfferBtn" disabled
+                  class="mt-6 energy-gradient text-white w-full py-3 rounded-lg font-semibold btn-glow flex items-center justify-center">
+            <span id="createText">Create Offer</span>
+            <span id="createSpinner" class="hidden ml-2">
               <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </span>
           </button>
-
-          <button id="fillSampleBtn" 
-                  class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold btn-glow flex items-center justify-center">
-            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
-            </svg>
-            Fill Sample Data
-          </button>
+          <p class="mt-3 text-sm text-gray-600 text-center">Minimum price: <strong>0.01 ETH</strong></p>
         </div>
 
-        <!-- Prediction Result -->
-        <div id="predictionResult" class="hidden prediction-card rounded-lg p-6 animate-fade-in">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold text-amber-900">Prediction Result</h3>
-            <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
-            </svg>
-          </div>
-          
-          <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg p-4 shadow-sm">
-              <p class="text-sm text-gray-600 mb-2">Predicted AC Power Output</p>
-              <p class="text-4xl font-bold text-amber-600"><span id="predictedPower">0.00</span> <span class="text-2xl">kW</span></p>
-            </div>
-            
-            <div class="bg-white rounded-lg p-4 shadow-sm">
-              <p class="text-sm text-gray-600 mb-2">Input Parameters</p>
-              <div class="text-sm space-y-1">
-                <p><strong>Irradiation:</strong> <span id="resultIrradiation">-</span> W/m²</p>
-                <p><strong>Ambient Temp:</strong> <span id="resultAmbient">-</span> °C</p>
-                <p><strong>Module Temp:</strong> <span id="resultModule">-</span> °C</p>
-                <p><strong>Time:</strong> <span id="resultTime">-</span></p>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4 p-4 bg-amber-100 rounded-lg border border-amber-300">
-            <p class="text-sm text-amber-900">
-              <strong>💡 Tip:</strong> Use this prediction to optimize your energy offers on the marketplace!
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Create Offer -->
-      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4">Create Energy Offer</h2>
-        <div class="grid md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
-            <input id="userName" type="text" placeholder="John Doe"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
-            <p id="userNameError" class="text-sm text-red-600 hidden">Name is required</p>
-          </div>
-          <div>
-            <label class="block text-gray-700 font-medium mb-2">Price (ETH) ≥ 0.01</label>
-            <input id="priceEth" type="number" step="0.001" min="0.01" placeholder="0.05"
-                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
-            <p id="priceEthError" class="text-sm text-red-600 hidden">Price must be ≥ 0.01 ETH</p>
-          </div>
-        </div>
-        <button id="createOfferBtn" disabled
-                class="mt-4 energy-gradient text-white w-full py-3 rounded-lg font-semibold btn-glow flex items-center justify-center">
-          <span id="createText">Create Offer</span>
-          <span id="createSpinner" class="hidden ml-2">
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </span>
-        </button>
-        <p class="mt-2 text-sm text-gray-600">Minimum price: <strong>0.01 ETH</strong></p>
-      </div>
-
-      <!-- Filters and Toggle -->
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
-        <div class="flex items-center space-x-4">
+        <!-- Filters -->
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
           <label class="flex items-center space-x-2 cursor-pointer">
             <input type="checkbox" id="showAllToggle" class="rounded" checked>
             <span class="text-sm text-gray-600">Show all marketplace offers</span>
           </label>
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-600">Sort by:</label>
+            <select id="sortOffers" class="border rounded-lg px-3 py-2 focus:outline-none focus:border-green-500">
+              <option value="id">Offer ID</option>
+              <option value="priceAsc">Price (Low to High)</option>
+              <option value="priceDesc">Price (High to Low)</option>
+              <option value="dateDesc">Date (Newest)</option>
+            </select>
+          </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <label class="text-sm text-gray-600">Sort by:</label>
-          <select id="sortOffers" class="border rounded px-2 py-1">
-            <option value="id">Offer ID</option>
-            <option value="priceAsc">Price (Low to High)</option>
-            <option value="priceDesc">Price (High to Low)</option>
-            <option value="dateDesc">Date (Newest)</option>
-          </select>
+
+        <!-- Offers Table -->
+        <div class="module-card">
+          <h2 class="text-2xl font-bold mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+            </svg>
+            Active Offers
+          </h2>
+          <div id="offersContainer" class="space-y-3">
+            <p class="text-gray-500 text-center py-8">Loading offers from blockchain…</p>
+          </div>
         </div>
       </div>
 
-      <!-- Offers Table -->
-      <div class="bg-white rounded-xl shadow-lg p-6 table-container">
-        <h2 class="text-2xl font-semibold mb-4">Active Offers</h2>
-        <div id="offersContainer" class="space-y-3">
-          <p class="text-gray-500 text-center">Loading offers from blockchain…</p>
+      <!-- Tab Content: History -->
+      <div class="tab-content hidden" data-tab-content="history">
+        <div class="module-card">
+          <h2 class="text-2xl font-bold mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
+            </svg>
+            Accepted Offers (Transaction History)
+          </h2>
+          <div id="acceptedContainer" class="space-y-3">
+            <p class="text-gray-500 text-center py-8">No accepted offers yet.</p>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid md:grid-cols-2 gap-8 mt-8">
+          <div class="module-card">
+            <h3 class="text-xl font-bold mb-4">Price History</h3>
+            <canvas id="priceChart" height="200"></canvas>
+          </div>
+          <div class="module-card">
+            <h3 class="text-xl font-bold mb-4">Accepted by Seller</h3>
+            <canvas id="acceptedChart" height="200"></canvas>
+          </div>
         </div>
       </div>
 
-      <!-- Accepted Offers History -->
-      <div class="bg-white rounded-xl shadow-lg p-6 mt-8 table-container">
-        <h2 class="text-2xl font-semibold mb-4">Accepted Offers (History)</h2>
-        <div id="acceptedContainer" class="space-y-3">
-          <p class="text-gray-500 text-center">No accepted offers yet.</p>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -317,8 +621,91 @@
     let hasConnected = false;
     let provider, signer, contract, userAddress, userHash;
     let acceptedOffers = JSON.parse(localStorage.getItem("acceptedOffers")) || [];
-    let priceChart, acceptedChart;
+    let priceChart, acceptedChart, productionChart, mixChart;
     let pollInterval;
+    let currentTab = 'overview';
+
+    // -------------------------------------------------
+    // TAB MANAGEMENT
+    // -------------------------------------------------
+    function initTabs() {
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetTab = btn.dataset.tab;
+          
+          // Update buttons
+          tabBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // Update content
+          tabContents.forEach(content => {
+            if (content.dataset.tabContent === targetTab) {
+              content.classList.remove('hidden');
+            } else {
+              content.classList.add('hidden');
+            }
+          });
+          
+          currentTab = targetTab;
+          
+          // Update charts if switching to relevant tabs
+          if (targetTab === 'overview') {
+            updateOverviewCharts();
+          }
+        });
+      });
+    }
+
+    // -------------------------------------------------
+    // STATS UPDATE
+    // -------------------------------------------------
+    function updateDashboardStats() {
+      // Simulate energy generation data
+      const solarPower = parseFloat(document.getElementById('predictedPower')?.textContent || 0);
+      const windPower = parseFloat(document.getElementById('windPower')?.textContent || 8.3);
+      const totalGen = (solarPower + windPower).toFixed(1);
+      
+      document.getElementById('totalGeneration').textContent = totalGen;
+      document.getElementById('generationMeter').style.width = `${Math.min(100, totalGen * 10)}%`;
+      
+      // Active offers count
+      const offersContainer = document.getElementById('offersContainer');
+      const offerCount = offersContainer.querySelectorAll('.border').length || 0;
+      document.getElementById('activeOffers').textContent = offerCount;
+      
+      // Total revenue from accepted offers
+      let totalRevenue = 0;
+      acceptedOffers.forEach(offer => {
+        totalRevenue += parseFloat(offer.price || 0);
+      });
+      document.getElementById('totalRevenue').textContent = totalRevenue.toFixed(3);
+      
+      // Battery simulation - oscillate between 70-85%
+      const battery = 70 + Math.sin(Date.now() / 10000) * 15;
+      document.getElementById('batteryLevel').textContent = Math.round(battery);
+      document.getElementById('batteryMeter').style.width = `${battery}%`;
+    }
+
+    // -------------------------------------------------
+    // WIND ENERGY SIMULATION
+    // -------------------------------------------------
+    function updateWindData() {
+      // Simulate wind data
+      const windSpeed = (10 + Math.random() * 5).toFixed(1);
+      const windPower = (windSpeed * 0.7).toFixed(1);
+      const efficiency = Math.round(82 + Math.random() * 10);
+      
+      document.getElementById('windSpeed').textContent = windSpeed;
+      document.getElementById('windPower').textContent = windPower;
+      document.getElementById('windEfficiency').textContent = efficiency;
+    }
+
+    // Start wind simulation
+    setInterval(updateWindData, 5000);
+    updateWindData();
 
     // -------------------------------------------------
     // NETWORK CONFIG
@@ -372,7 +759,7 @@
         const dateTime = new Date(dateTimeInput);
         const timeFeatures = calculateTimeFeatures(dateTime);
 
-        // Simulate ML model prediction (replace with actual API call)
+        // Simulate ML model prediction
         const features = {
           IRRADIATION: irradiation,
           AMBIENT_TEMPERATURE: ambientTemp,
@@ -383,8 +770,7 @@
           minute_cos: timeFeatures.minute_cos
         };
 
-        // Simple heuristic model (replace with actual ML model call)
-        // This is a placeholder - you'll need to implement actual API call to your ML model
+        // Simple heuristic model
         let predictedPower = (irradiation / 1000) * 5 * 
                             (1 - (moduleTemp - 25) * 0.004) * 
                             (1 + (ambientTemp - 25) * 0.002);
@@ -404,6 +790,7 @@
         document.getElementById("predictionResult").classList.remove("hidden");
 
         showToast("Solar power prediction completed successfully!", "success");
+        updateDashboardStats();
       } catch (e) {
         console.error("Prediction error:", e);
         showToast("Prediction failed. Please check your inputs.", "error");
@@ -550,6 +937,9 @@
       const now = new Date();
       document.getElementById("solarDateTime").value = now.toISOString().slice(0, 16);
 
+      // Initialize tabs
+      initTabs();
+
       if (typeof Chart !== "undefined") {
         initializeCharts();
         updateAcceptedList();
@@ -557,6 +947,10 @@
         showToast("Failed to load Chart.js. Visualizations disabled.", "error");
         updateAcceptedList();
       }
+
+      // Start stats update interval
+      setInterval(updateDashboardStats, 3000);
+      updateDashboardStats();
     });
 
     // -------------------------------------------------
@@ -602,6 +996,7 @@
         listenForAccepts();
         listenForCreates();
         startPolling();
+        updateDashboardStats();
       } catch (e) {
         console.error(e);
         if (e.code === -32002) {
@@ -659,6 +1054,7 @@
         showToast(`Offer created! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
         document.getElementById("priceEth").value = "";
         await loadOffers();
+        updateDashboardStats();
       } catch (e) {
         console.error("createOffer failed", e);
         showToast(e.reason || e.message || "Transaction failed", "error");
@@ -758,6 +1154,7 @@
                 await tx.wait();
                 showToast(`Offer cancelled! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
                 await loadOffers();
+                updateDashboardStats();
               } catch (err) {
                 console.error("cancelOffer failed", err);
                 showToast(err.reason || err.message || "Cancel failed", "error");
@@ -796,6 +1193,7 @@
                 await tx.wait();
                 showToast(`Offer accepted! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
                 await loadOffers();
+                updateDashboardStats();
               } catch (err) {
                 console.error("acceptOffer failed", err);
                 showToast(err.reason || err.message || "Accept failed", "error");
@@ -823,6 +1221,8 @@
         if (priceChart) {
           updatePriceChart(offers);
         }
+        
+        updateDashboardStats();
       } catch (e) {
         console.error("loadOffers failed", e);
         container.innerHTML = "<p class='text-red-600'>Load failed.</p>";
@@ -834,6 +1234,8 @@
     // -------------------------------------------------
     function initializeCharts() {
       console.log("Initializing charts with Chart.js");
+      
+      // Price Chart
       priceChart = new Chart(document.getElementById("priceChart"), {
         type: 'line',
         data: {
@@ -849,6 +1251,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: true,
           scales: {
             y: {
               beginAtZero: true,
@@ -861,6 +1264,7 @@
         }
       });
 
+      // Accepted Chart
       acceptedChart = new Chart(document.getElementById("acceptedChart"), {
         type: 'pie',
         data: {
@@ -872,12 +1276,78 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: true,
           plugins: {
             legend: { position: 'top' },
             title: { display: true, text: 'Accepted Offers by Seller' }
           }
         }
       });
+
+      // Production Trend Chart
+      productionChart = new Chart(document.getElementById("productionChart"), {
+        type: 'line',
+        data: {
+          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          datasets: [{
+            label: 'Solar (kWh)',
+            data: [12, 15, 13, 17, 14, 16, 18],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.4
+          }, {
+            label: 'Wind (kWh)',
+            data: [8, 9, 10, 8, 9, 11, 10],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Energy (kWh)' }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' }
+          }
+        }
+      });
+
+      // Energy Mix Chart
+      mixChart = new Chart(document.getElementById("mixChart"), {
+        type: 'doughnut',
+        data: {
+          labels: ['Solar', 'Wind', 'Battery'],
+          datasets: [{
+            data: [55, 35, 10],
+            backgroundColor: ['#f59e0b', '#3b82f6', '#8b5cf6'],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: 'right' },
+            title: { display: true, text: 'Current Energy Sources' }
+          }
+        }
+      });
+    }
+
+    function updateOverviewCharts() {
+      if (productionChart && mixChart) {
+        productionChart.update();
+        mixChart.update();
+      }
     }
 
     function updatePriceChart(offers) {
@@ -1005,7 +1475,7 @@
     function updateAcceptedList() {
       const container = document.getElementById("acceptedContainer");
       if (!acceptedOffers.length) {
-        container.innerHTML = "<p class='text-gray-500 text-center'>No accepted offers yet.</p>";
+        container.innerHTML = "<p class='text-gray-500 text-center py-8'>No accepted offers yet.</p>";
         return;
       }
 
