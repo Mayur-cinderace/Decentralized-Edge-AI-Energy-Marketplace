@@ -283,7 +283,7 @@ Authorization: Bearer <token>
 
 ### Trades
 - `id` - Primary key
-- `seller_id` - Producer user ID
+- `seller_id` - Producer  user ID
 - `buyer_id` - Consumer user ID
 - `energy_amount` - kWh amount
 - `price_per_unit` - Price/kWh
