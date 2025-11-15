@@ -9,8 +9,15 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
   <style>
     .energy-gradient { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
+    .solar-gradient { background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%); }
     .gradient-text { 
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      -webkit-background-clip: text; 
+      -webkit-text-fill-color: transparent; 
+      background-clip: text; 
+    }
+    .solar-text { 
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       -webkit-background-clip: text; 
       -webkit-text-fill-color: transparent; 
       background-clip: text; 
@@ -28,6 +35,7 @@
     }
     .btn-glow:hover::before { left: 100%; }
     .btn-glow:hover { box-shadow: 0 0 30px rgba(16,185,129,.6); transform: translateY(-2px); }
+    .btn-solar-glow:hover { box-shadow: 0 0 30px rgba(245,158,11,.6); }
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -49,7 +57,12 @@
     .toast.show { opacity: 1; }
     .toast-success { background: #10b981; }
     .toast-error { background: #ef4444; }
+    .toast-warning { background: #f59e0b; }
     .invalid { border-color: #ef4444 !important; }
+    .prediction-card {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 2px solid #f59e0b;
+    }
     @media (max-width: 640px) {
       .table-container { overflow-x: auto; }
       canvas { max-width: 100%; }
@@ -95,16 +108,146 @@
         </div>
       </div>
 
+      <!-- Solar Power Prediction Section -->
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-lg p-6 mb-8 border-2 border-amber-200">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/>
+            </svg>
+            <h2 class="text-2xl font-bold solar-text">Solar Power Prediction</h2>
+          </div>
+          <span class="bg-amber-600 text-white px-3 py-1 rounded-full text-sm font-semibold">AI-Powered</span>
+        </div>
+
+        <p class="text-gray-700 mb-6">Predict AC power output from your solar panels using our machine learning model. Enter real-time sensor data below.</p>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+                </svg>
+                Date & Time
+              </span>
+            </label>
+            <input id="solarDateTime" type="datetime-local" 
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                Irradiation (W/m²)
+              </span>
+            </label>
+            <input id="solarIrradiation" type="number" step="0.01" placeholder="800.5"
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
+            <p class="text-xs text-gray-500 mt-1">Typical range: 0-1200 W/m²</p>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+                Ambient Temperature (°C)
+              </span>
+            </label>
+            <input id="solarAmbient" type="number" step="0.1" placeholder="25.5"
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
+            <p class="text-xs text-gray-500 mt-1">Typical range: -10 to 50°C</p>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 font-medium mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z"/>
+                </svg>
+                Module Temperature (°C)
+              </span>
+            </label>
+            <input id="solarModule" type="number" step="0.1" placeholder="45.2"
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-amber-500">
+            <p class="text-xs text-gray-500 mt-1">Typical range: 0 to 85°C</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 mb-6">
+          <button id="predictBtn" 
+                  class="solar-gradient text-white px-8 py-3 rounded-lg font-semibold btn-glow btn-solar-glow flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
+            </svg>
+            <span id="predictText">Predict AC Power</span>
+            <span id="predictSpinner" class="hidden ml-2">
+              <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </span>
+          </button>
+
+          <button id="fillSampleBtn" 
+                  class="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold btn-glow flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+            </svg>
+            Fill Sample Data
+          </button>
+        </div>
+
+        <!-- Prediction Result -->
+        <div id="predictionResult" class="hidden prediction-card rounded-lg p-6 animate-fade-in">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-amber-900">Prediction Result</h3>
+            <svg class="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+            </svg>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg p-4 shadow-sm">
+              <p class="text-sm text-gray-600 mb-2">Predicted AC Power Output</p>
+              <p class="text-4xl font-bold text-amber-600"><span id="predictedPower">0.00</span> <span class="text-2xl">kW</span></p>
+            </div>
+            
+            <div class="bg-white rounded-lg p-4 shadow-sm">
+              <p class="text-sm text-gray-600 mb-2">Input Parameters</p>
+              <div class="text-sm space-y-1">
+                <p><strong>Irradiation:</strong> <span id="resultIrradiation">-</span> W/m²</p>
+                <p><strong>Ambient Temp:</strong> <span id="resultAmbient">-</span> °C</p>
+                <p><strong>Module Temp:</strong> <span id="resultModule">-</span> °C</p>
+                <p><strong>Time:</strong> <span id="resultTime">-</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-4 bg-amber-100 rounded-lg border border-amber-300">
+            <p class="text-sm text-amber-900">
+              <strong>💡 Tip:</strong> Use this prediction to optimize your energy offers on the marketplace!
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Create Offer -->
       <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
         <h2 class="text-2xl font-semibold mb-4">Create Energy Offer</h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div>
-  <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
-  <input id="userName" type="text" placeholder="John Doe"
-         class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
-  <p id="userNameError" class="text-sm text-red-600 hidden">Name is required</p>
-</div>
+            <label class="block text-gray-700 font-medium mb-2">Your Name (public)</label>
+            <input id="userName" type="text" placeholder="John Doe"
+                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-green-500">
+            <p id="userNameError" class="text-sm text-red-600 hidden">Name is required</p>
+          </div>
           <div>
             <label class="block text-gray-700 font-medium mb-2">Price (ETH) ≥ 0.01</label>
             <input id="priceEth" type="number" step="0.001" min="0.01" placeholder="0.05"
@@ -125,26 +268,11 @@
         <p class="mt-2 text-sm text-gray-600">Minimum price: <strong>0.01 ETH</strong></p>
       </div>
 
-      <!-- Visualizations -->
-      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4">Market Insights</h2>
-        <div class="grid md:grid-cols-2 gap-6">
-          <div>
-            <h3 class="text-lg font-medium mb-2">Active Offer Prices</h3>
-            <canvas id="priceChart"></canvas>
-          </div>
-          <div>
-            <h3 class="text-lg font-medium mb-2">Accepted Offers by Seller</h3>
-            <canvas id="acceptedChart"></canvas>
-          </div>
-        </div>
-      </div>
-
       <!-- Filters and Toggle -->
       <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div class="flex items-center space-x-4">
           <label class="flex items-center space-x-2 cursor-pointer">
-            <input type="checkbox" id="showAllToggle" class="rounded" checked> <!-- Default to show all -->
+            <input type="checkbox" id="showAllToggle" class="rounded" checked>
             <span class="text-sm text-gray-600">Show all marketplace offers</span>
           </label>
         </div>
@@ -190,7 +318,7 @@
     let provider, signer, contract, userAddress, userHash;
     let acceptedOffers = JSON.parse(localStorage.getItem("acceptedOffers")) || [];
     let priceChart, acceptedChart;
-    let pollInterval; // For polling offers
+    let pollInterval;
 
     // -------------------------------------------------
     // NETWORK CONFIG
@@ -201,6 +329,106 @@
         "0xaa36a7": { name: "Sepolia Testnet", rpc: "https://eth-sepolia.g.alchemy.com/v2/demo" }
       }
     };
+
+    // -------------------------------------------------
+    // SOLAR PREDICTION FUNCTIONS
+    // -------------------------------------------------
+    function calculateTimeFeatures(dateTime) {
+      const hour = dateTime.getHours();
+      const minute = dateTime.getMinutes();
+      
+      return {
+        hour_sin: Math.sin(2 * Math.PI * hour / 24),
+        hour_cos: Math.cos(2 * Math.PI * hour / 24),
+        minute_sin: Math.sin(2 * Math.PI * minute / 60),
+        minute_cos: Math.cos(2 * Math.PI * minute / 60)
+      };
+    }
+
+    async function predictSolarPower() {
+      const dateTimeInput = document.getElementById("solarDateTime").value;
+      const irradiation = parseFloat(document.getElementById("solarIrradiation").value);
+      const ambientTemp = parseFloat(document.getElementById("solarAmbient").value);
+      const moduleTemp = parseFloat(document.getElementById("solarModule").value);
+
+      // Validation
+      if (!dateTimeInput || isNaN(irradiation) || isNaN(ambientTemp) || isNaN(moduleTemp)) {
+        showToast("Please fill in all solar prediction fields", "error");
+        return;
+      }
+
+      if (irradiation < 0 || irradiation > 1500) {
+        showToast("Irradiation should be between 0-1500 W/m²", "warning");
+      }
+
+      const btn = document.getElementById("predictBtn");
+      const txt = document.getElementById("predictText");
+      const spin = document.getElementById("predictSpinner");
+      txt.textContent = "Predicting...";
+      spin.classList.remove("hidden");
+      btn.disabled = true;
+
+      try {
+        const dateTime = new Date(dateTimeInput);
+        const timeFeatures = calculateTimeFeatures(dateTime);
+
+        // Simulate ML model prediction (replace with actual API call)
+        const features = {
+          IRRADIATION: irradiation,
+          AMBIENT_TEMPERATURE: ambientTemp,
+          MODULE_TEMPERATURE: moduleTemp,
+          hour_sin: timeFeatures.hour_sin,
+          hour_cos: timeFeatures.hour_cos,
+          minute_sin: timeFeatures.minute_sin,
+          minute_cos: timeFeatures.minute_cos
+        };
+
+        // Simple heuristic model (replace with actual ML model call)
+        // This is a placeholder - you'll need to implement actual API call to your ML model
+        let predictedPower = (irradiation / 1000) * 5 * 
+                            (1 - (moduleTemp - 25) * 0.004) * 
+                            (1 + (ambientTemp - 25) * 0.002);
+        
+        // Add time-based variation
+        const hourEffect = (timeFeatures.hour_cos + 1) / 2;
+        predictedPower *= hourEffect;
+        
+        predictedPower = Math.max(0, predictedPower).toFixed(2);
+
+        // Display results
+        document.getElementById("predictedPower").textContent = predictedPower;
+        document.getElementById("resultIrradiation").textContent = irradiation.toFixed(2);
+        document.getElementById("resultAmbient").textContent = ambientTemp.toFixed(1);
+        document.getElementById("resultModule").textContent = moduleTemp.toFixed(1);
+        document.getElementById("resultTime").textContent = dateTime.toLocaleString();
+        document.getElementById("predictionResult").classList.remove("hidden");
+
+        showToast("Solar power prediction completed successfully!", "success");
+      } catch (e) {
+        console.error("Prediction error:", e);
+        showToast("Prediction failed. Please check your inputs.", "error");
+      } finally {
+        txt.textContent = "Predict AC Power";
+        spin.classList.add("hidden");
+        btn.disabled = false;
+      }
+    }
+
+    function fillSampleData() {
+      const now = new Date();
+      const dateTimeString = now.toISOString().slice(0, 16);
+      
+      document.getElementById("solarDateTime").value = dateTimeString;
+      document.getElementById("solarIrradiation").value = "850.5";
+      document.getElementById("solarAmbient").value = "28.5";
+      document.getElementById("solarModule").value = "45.2";
+      
+      showToast("Sample data filled. Click 'Predict AC Power' to see results.", "success");
+    }
+
+    // Event listeners for solar prediction
+    document.getElementById("predictBtn").addEventListener("click", predictSolarPower);
+    document.getElementById("fillSampleBtn").addEventListener("click", fillSampleData);
 
     // -------------------------------------------------
     // LOAD CONTRACT ADDRESS
@@ -266,38 +494,38 @@
     }
 
     function validateForm() {
-  const name = document.getElementById("userName").value.trim();
-  const price = parseFloat(document.getElementById("priceEth").value);
-  const nameError = document.getElementById("userNameError");
-  const priceError = document.getElementById("priceEthError");
-  let valid = true;
+      const name = document.getElementById("userName").value.trim();
+      const price = parseFloat(document.getElementById("priceEth").value);
+      const nameError = document.getElementById("userNameError");
+      const priceError = document.getElementById("priceEthError");
+      let valid = true;
 
-  if (!nameError || !priceError) {
-    console.error("Form elements not found");
-    return false;
-  }
+      if (!nameError || !priceError) {
+        console.error("Form elements not found");
+        return false;
+      }
 
-  if (!name) {
-    nameError.classList.remove("hidden");
-    document.getElementById("userName").classList.add("invalid");
-    valid = false;
-  } else {
-    nameError.classList.add("hidden");
-    document.getElementById("userName").classList.remove("invalid");
-  }
+      if (!name) {
+        nameError.classList.remove("hidden");
+        document.getElementById("userName").classList.add("invalid");
+        valid = false;
+      } else {
+        nameError.classList.add("hidden");
+        document.getElementById("userName").classList.remove("invalid");
+      }
 
-  if (!price || price < 0.01) {
-    priceError.classList.remove("hidden");
-    document.getElementById("priceEth").classList.add("invalid");
-    valid = false;
-  } else {
-    priceError.classList.add("hidden");
-    document.getElementById("priceEth").classList.remove("invalid");
-  }
+      if (!price || price < 0.01) {
+        priceError.classList.remove("hidden");
+        document.getElementById("priceEth").classList.add("invalid");
+        valid = false;
+      } else {
+        priceError.classList.add("hidden");
+        document.getElementById("priceEth").classList.remove("invalid");
+      }
 
-  document.getElementById("createOfferBtn").disabled = !valid || !hasConnected;
-  return valid;
-}
+      document.getElementById("createOfferBtn").disabled = !valid || !hasConnected;
+      return valid;
+    }
 
     // -------------------------------------------------
     // LOGIN CHECK
@@ -317,6 +545,10 @@
       document.getElementById("profileEmail").textContent = userEmail;
       document.getElementById("userName").value = userName;
       userHash = hashUsername(userName);
+
+      // Set current date/time for solar prediction
+      const now = new Date();
+      document.getElementById("solarDateTime").value = now.toISOString().slice(0, 16);
 
       if (typeof Chart !== "undefined") {
         initializeCharts();
@@ -368,8 +600,8 @@
 
         await loadOffers();
         listenForAccepts();
-        listenForCreates(); // Start listening for new offers
-        startPolling(); // Start polling for offers
+        listenForCreates();
+        startPolling();
       } catch (e) {
         console.error(e);
         if (e.code === -32002) {
@@ -394,12 +626,12 @@
     window.ethereum?.on("accountsChanged", () => {
       hasConnected = false;
       hasRequested = false;
-      clearInterval(pollInterval); // Stop polling on account change
+      clearInterval(pollInterval);
       connectWallet();
     });
 
     window.ethereum?.on("chainChanged", () => {
-      clearInterval(pollInterval); // Stop polling on chain change
+      clearInterval(pollInterval);
       window.location.reload();
     });
 
@@ -426,7 +658,7 @@
         await tx.wait();
         showToast(`Offer created! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" class="underline">View</a>`, "success");
         document.getElementById("priceEth").value = "";
-        await loadOffers(); // Refresh offers immediately
+        await loadOffers();
       } catch (e) {
         console.error("createOffer failed", e);
         showToast(e.reason || e.message || "Transaction failed", "error");
@@ -478,8 +710,8 @@
           offers.push({
             id: i,
             userHash: uHash,
-            priceEth: parseFloat(ethers.formatEther(priceWei)), // Convert to number
-            timestamp: Number(ts) * 1000, // Ensure number
+            priceEth: parseFloat(ethers.formatEther(priceWei)),
+            timestamp: Number(ts) * 1000,
             date: new Date(Number(ts) * 1000).toLocaleString()
           });
         }
@@ -651,7 +883,7 @@
     function updatePriceChart(offers) {
       if (!priceChart) return;
       const labels = offers.map(o => `Offer #${o.id}`);
-      const data = offers.map(o => o.priceEth); // Already a number
+      const data = offers.map(o => o.priceEth);
       priceChart.data.labels = labels;
       priceChart.data.datasets[0].data = data;
       priceChart.update();
@@ -697,7 +929,7 @@
           localStorage.setItem("acceptedOffers", JSON.stringify(acceptedOffers));
           updateAcceptedList();
           if (acceptedChart) updateAcceptedChart();
-          loadOffers(); // Refresh offers on accept
+          loadOffers();
         } catch (err) {
           console.error("Error in OfferAccepted handler", err);
         }
@@ -705,7 +937,7 @@
 
       try {
         const filter = contract.filters.OfferAccepted();
-        const events = await contract.queryFilter(filter, -1000, "latest"); // Check last 1000 blocks
+        const events = await contract.queryFilter(filter, -1000, "latest");
         for (const e of events) {
           const { offerId, buyer, sellerHash, price, timestamp } = e.args;
           const priceEth = ethers.formatEther(price);
@@ -741,7 +973,7 @@
       contract.on("OfferCreated", (offerId, userHash, price, timestamp, event) => {
         try {
           console.log(`New offer created: #${offerId}`);
-          loadOffers(); // Refresh offers when a new one is created
+          loadOffers();
         } catch (err) {
           console.error("Error in OfferCreated handler", err);
         }
@@ -758,7 +990,7 @@
           console.log("Polling for new offers...");
           await loadOffers();
         }
-      }, 30000); // Poll every 30 seconds
+      }, 30000);
     }
 
     function getNameFromHash(hash) {
